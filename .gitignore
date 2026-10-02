@@ -2,3 +2,4 @@
 /fixtures/*/src/uniffi
 target
 tmp
+.direnv
