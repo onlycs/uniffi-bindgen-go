@@ -46,9 +46,39 @@
           '';
         };
 
+        packages.fromSource = pkgs.rustPlatform.buildRustPackage {
+          pname = "uniffi-bindgen-go";
+          version = "0.7.1+v0.31.0";
+
+          src = ./.;
+
+          cargoLock = {
+            lockFile = ./Cargo.lock;
+          };
+
+          nativeBuildInputs = with pkgs; [ pkg-config ];
+
+          buildInputs = [ ];
+
+          cargoBuildFlags = [
+            "--package"
+            "uniffi-bindgen-go"
+          ];
+
+          cargoTestFlags = [
+            "--package"
+            "uniffi-bindgen-go"
+          ];
+        };
+
         apps.default = {
           type = "app";
           program = "${self.packages.${system}.default}/bin/uniffi-bindgen-go";
+        };
+
+        apps.fromSource = {
+          type = "app";
+          program = "${self.packages.${system}.fromSource}/bin/uniffi-bindgen-go";
         };
 
         devShells.default = pkgs.mkShell {
