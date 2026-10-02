@@ -5,6 +5,7 @@
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     flake-utils.url = "github:numtide/flake-utils";
     rust-overlay.url = "github:oxalica/rust-overlay";
+    crane.url = "github:ipetkov/crane";
   };
 
   outputs =
@@ -13,6 +14,7 @@
       nixpkgs,
       flake-utils,
       rust-overlay,
+      crane,
     }:
     flake-utils.lib.eachDefaultSystem (
       system:
@@ -20,65 +22,17 @@
         overlays = [ (import rust-overlay) ];
         pkgs = import nixpkgs { inherit system overlays; };
         toolchain = pkgs.rust-bin.fromRustupToolchainFile ./rust-toolchain.toml;
+
+        craneLib = crane.mkLib pkgs;
       in
       {
-        packages.default = pkgs.stdenvNoCC.mkDerivation {
-          pname = "uniffi-bindgen-go";
-          version = "0.7.1+v0.31.0";
-
-          src = pkgs.fetchurl {
-            url = "https://codeberg.org/tendulkar/uniffi-bindgen-go/releases/download/v0.7.1+v0.31.0/uniffi-bindgen-go.xz";
-            hash = "sha256-i51UwKRVxoAT7eDwvo2WihKlxXk96igAjvO2Rx6Dys8=";
-          };
-
-          nativeBuildInputs = [ pkgs.xz ];
-          dontUnpack = true;
-
-          installPhase = ''
-            runHook preInstall
-
-            mkdir -p $out/bin
-
-            xz -dc "$src" > "$out/bin/uniffi-bindgen-go"
-            chmod +x "$out/bin/uniffi-bindgen-go"
-
-            runHook postInstall
-          '';
-        };
-
-        packages.fromSource = pkgs.rustPlatform.buildRustPackage {
-          pname = "uniffi-bindgen-go";
-          version = "0.7.1+v0.31.0";
-
+        packages.default = craneLib.buildPackage {
           src = ./.;
-
-          cargoLock = {
-            lockFile = ./Cargo.lock;
+          strictDeps = true;
+          cargoArtifacts = craneLib.buildDepsOnly {
+            src = ./.;
+            strictDeps = true;
           };
-
-          nativeBuildInputs = with pkgs; [ pkg-config ];
-
-          buildInputs = [ ];
-
-          cargoBuildFlags = [
-            "--package"
-            "uniffi-bindgen-go"
-          ];
-
-          cargoTestFlags = [
-            "--package"
-            "uniffi-bindgen-go"
-          ];
-        };
-
-        apps.default = {
-          type = "app";
-          program = "${self.packages.${system}.default}/bin/uniffi-bindgen-go";
-        };
-
-        apps.fromSource = {
-          type = "app";
-          program = "${self.packages.${system}.fromSource}/bin/uniffi-bindgen-go";
         };
 
         devShells.default = pkgs.mkShell {
