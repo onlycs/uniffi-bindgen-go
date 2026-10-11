@@ -22,7 +22,7 @@
 	{%- when None -%}
 		{%- match func.throws_type() -%}
 		{%- when Some with (throws_type) -%}
-		error
+		{{ throws_type|type_name(ci) }}
 		{%- when None -%}
 		{%- endmatch %}
 	{%- endmatch %}
